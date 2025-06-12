@@ -5,6 +5,7 @@ let bombChance = 0.5;
 let bombCount;
 let revealed = true;
 let bombBrush = false;
+let test = true;
 
 let cellSize;
 let padding;
