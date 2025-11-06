@@ -1,13 +1,11 @@
-let cols = 28;
-let rows = 41;
-let canvasWidth = 1200;
-let bombChance = 0;
+let cols = 20;
+let rows = 40;
+let canvasWidth = 1000;
+let bombChance = 0.5;
 let bombCount;
 let revealed = true;
 let bombBrush = false;
-let grayBrush = false;
-let gray = '#ddd';
-let white = '#fff';
+let test = true;
 
 let cellSize;
 let padding;
@@ -22,7 +20,7 @@ let toggledDuringDrag = new Set();
 let font;
 
 function preload() {
-  font = loadFont('assets/fonts/NationalPark-Bold.ttf');
+  font = loadFont('assets/fonts/GT-Alpina-Typewriter-Thin-Trial.otf');
   bombFont = loadFont('assets/fonts/GTAlpinaTwTrial-Rg-Bomb.otf');
 }
 
@@ -80,7 +78,7 @@ function draw() {
 }
 
 function drawGrid(pg) {
-  pg.background(white);
+  pg.background(255);
 
   // Calculate numbers based on bombs (hidden cells)
   let numbers = computeNumbers();
@@ -128,23 +126,15 @@ function drawGrid(pg) {
         pg.stroke(0);
         pg.rect(px, py, cellSize, cellSize);
 
-        if (cell.isGray) {
-          pg.fill(gray);
-          pg.rect(px, py, cellSize, cellSize);
-        }
-
         // If adjacent to bombs, show number
         let n = numbers[y][x];
         if (n > 0) {
-          pg.fill(white);
-          pg.rect(px, py, cellSize, cellSize);
-
           pg.fill(0);
           pg.noStroke();
           pg.textAlign(CENTER, CENTER);
-          pg.textSize(cellSize * 0.9);
+          pg.textSize(cellSize * 0.8);
           pg.textFont(font); // Use custom font
-          pg.text(n, px + cellSize / 2, py + cellSize / 2 - cellSize * 0.16);
+          pg.text(n, px + cellSize / 2, py + cellSize / 2 - cellSize * 0.08);
         }
       }
     }
@@ -152,61 +142,30 @@ function drawGrid(pg) {
 }
 
 function drawHiddenCell(pg, x, y, size, mode) {
-  const inset = size * 0.2;
+  const inset = size * 0.15;
   const small = size - 2 * inset;
-  const lineColor = 0;
+  const isLightMode = mode === 'light';
+  const bgColor = isLightMode ? 255 : 0;
+  const lineColor = isLightMode ? 0 : 255;
 
-  // Slight shading for sides to give a tile-like look (relative to bgColor)
-  let shadeTop = 255;
-  let shadeLeft = 255;
-  let shadeRight = 0;
-  let shadeBottom = 0;
+  // Background and outline
+  pg.fill(bgColor);
+  pg.stroke(lineColor);
+  pg.rect(x, y, size, size);
 
-  // Draw center square
-  pg.noStroke();
-  pg.fill(gray);
-  pg.rect(x + inset, y + inset, small, small);
-
-  // Draw four trapezoids (top, right, bottom, left)
-  pg.fill(shadeTop);
-  pg.quad(x, y, x + size, y, x + size - inset, y + inset, x + inset, y + inset);
-
-  pg.fill(shadeRight);
-  pg.quad(
-    x + size,
-    y,
-    x + size - inset,
-    y + inset,
-    x + size - inset,
-    y + size - inset,
-    x + size,
-    y + size
-  );
-
-  pg.fill(shadeBottom);
-  pg.quad(
-    x,
-    y + size,
-    x + size,
-    y + size,
-    x + size - inset,
-    y + size - inset,
-    x + inset,
-    y + size - inset
-  );
-
-  pg.fill(shadeLeft);
-  pg.quad(x, y, x + inset, y + inset, x + inset, y + size - inset, x, y + size);
-
-  // Outlines
+  // Tile lines
   pg.stroke(lineColor);
   pg.noFill();
-  pg.rect(x, y, size, size); // outer border
+  pg.rect(x + inset, y + inset, small, small);
+  pg.line(x, y, x + inset, y + inset); // top-left
+  pg.line(x + size, y, x + size - inset, y + inset); // top-right
+  pg.line(x, y + size, x + inset, y + size - inset); // bottom-left
+  pg.line(x + size, y + size, x + size - inset, y + size - inset); // bottom-right
 }
 
 function drawBomb(pg, x, y, size) {
   // outline
-  pg.fill(white);
+  pg.noFill();
   pg.stroke(0);
   pg.rect(x, y, size, size);
   // Show bomb with custom font
@@ -276,12 +235,6 @@ function handleDraw(mx, my) {
           cell.isBomb = true;
           bombCount++;
         }
-      } else if (grayBrush) {
-        if (cell.isGray) {
-          cell.isGray = false;
-        } else {
-          cell.isGray = true;
-        }
       } else {
         // Normal toggle
         if (cell.state === 'hidden') {
@@ -321,16 +274,6 @@ function rerollBombs() {
   redraw();
 }
 
-function hideAllSquares() {
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      let cell = grid[y][x];
-      cell.state = 'hidden';
-    }
-  }
-  redraw();
-}
-
 function saveDrawing() {
   const data = {
     cols,
@@ -349,6 +292,8 @@ function saveDrawing() {
 
   saveJSON(data, 'grid.json');
 }
+
+
 
 function loadDrawing(data) {
   calculateLayout(data.cols, data.rows);
@@ -399,13 +344,8 @@ function keyPressed() {
   } else if (key === 'b') {
     // toggle bomb brush
     bombBrush = !bombBrush;
-  } else if (key === 'h') {
-    // hide everything
-    hideAllSquares();
-  } else if (key === 'g') {
-    grayBrush = !grayBrush;
   } else if (key === 'c') {
-    //clear drawing
+    // clear drawing
     grid = [];
     initGrid();
     bombCount = 0;
