@@ -23,7 +23,7 @@ let font;
 
 function preload() {
   font = loadFont('assets/fonts/NationalPark-Bold.ttf');
-  bombFont = loadFont('assets/fonts/GTAlpinaTwTrial-Rg-Bomb.otf');
+  bombFont = loadFont('assets/fonts/Bomb.otf');
 }
 
 function setup() {
@@ -215,7 +215,7 @@ function drawBomb(pg, x, y, size) {
   pg.textFont(bombFont);
   pg.textAlign(CENTER, CENTER);
   pg.textSize(cellSize * 1.2);
-  pg.text('9', x + cellSize / 2 - 0.5, y + cellSize / 2 - cellSize * 0.12);
+  pg.text('9', x + cellSize / 2.05, y + cellSize / 3.05);
 }
 
 // Count bombs around each cell (bomb = hidden cell)
@@ -337,13 +337,15 @@ function saveDrawing() {
     rows,
     bombs: [],
     hidden: [],
+    gray: [],
   };
 
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       let cell = grid[y][x];
       if (cell.isBomb) data.bombs.push({ x, y });
-      else if (cell.state === 'hidden') data.hidden.push({ x, y });
+      if (cell.state === 'hidden' && !cell.isBomb) data.hidden.push({ x, y });
+      if (cell.isGray) data.gray.push({ x, y });
     }
   }
 
@@ -360,6 +362,19 @@ function loadDrawing(data) {
     cell.isBomb = true;
     cell.state = 'hidden';
     bombCount++;
+  }
+
+  if (data.gray && Array.isArray(data.gray)) {
+    for (let { x, y } of data.gray) {
+      if (x >= 0 && x < cols && y >= 0 && y < rows) {
+        let cell = grid[y][x];
+        cell.isGray = true;
+        // ensure gray squares are visible (not left as hidden non-bombs)
+        if (cell.state === 'hidden' && !cell.isBomb) {
+          cell.state = 'empty';
+        }
+      }
+    }
   }
 
   // Apply hidden state to non-bombs
